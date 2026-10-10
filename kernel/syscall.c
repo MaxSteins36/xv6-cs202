@@ -101,6 +101,30 @@ extern uint64 sys_unlink(void);
 extern uint64 sys_link(void);
 extern uint64 sys_mkdir(void);
 extern uint64 sys_close(void);
+extern uint64 sys_hello(void);
+extern uint64 sys_sysinfo(void);
+extern uint64 sys_procinfo(void);
+
+static struct spinlock syscall_count_lock;
+static uint64 syscall_total;
+
+void
+syscallinit(void)
+{
+  initlock(&syscall_count_lock, "syscall_count");
+  syscall_total = 0;
+}
+
+uint64
+get_syscall_count(void)
+{
+  uint64 count;
+
+  acquire(&syscall_count_lock);
+  count = syscall_total;
+  release(&syscall_count_lock);
+  return count;
+}
 
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
@@ -126,6 +150,9 @@ static uint64 (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
+[SYS_hello]   sys_hello,
+[SYS_sysinfo] sys_sysinfo,
+[SYS_procinfo] sys_procinfo,
 };
 
 void
@@ -136,6 +163,11 @@ syscall(void)
 
   num = p->trapframe->a7;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
+    acquire(&syscall_count_lock);
+    syscall_total++;
+    release(&syscall_count_lock);
+    p->syscall_count++;
+
     // Use num to lookup the system call function for num, call it,
     // and store its return value in p->trapframe->a0
     p->trapframe->a0 = syscalls[num]();

@@ -81,6 +81,12 @@ struct trapframe {
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
+struct pinfo {
+  int ppid;
+  int syscall_count;
+  int page_usage;
+};
+
 // Per-process state
 struct proc {
   struct spinlock lock;
@@ -104,4 +110,5 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  uint64 syscall_count;        // Number of system calls made by this process
 };

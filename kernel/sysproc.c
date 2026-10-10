@@ -89,3 +89,43 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64 
+sys_hello(void){
+  int n;
+  argint(0,&n);
+  print_hello(n);
+  return 0;
+}
+
+uint64
+sys_sysinfo(void)
+{
+  int param;
+  argint(0, &param);
+
+  if(param == 0)
+    return count_active_procs();
+  if(param == 1)
+    return (int)(get_syscall_count() - 1);
+  if(param == 2)
+    return freepages();
+  return -1;
+}
+
+uint64
+sys_procinfo(void)
+{
+  uint64 user_info;
+  struct pinfo info;
+  struct proc *p = myproc();
+
+  argaddr(0, &user_info);
+  if(user_info == 0)
+    return -1;
+
+  fill_procinfo(&info);
+  if(copyout(p->pagetable, user_info, (char *)&info, sizeof(info)) < 0)
+    return -1;
+  return 0;
+}
